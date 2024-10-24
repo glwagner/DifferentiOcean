@@ -14,7 +14,7 @@ c = sqrt(g)
 grid = RectilinearGrid(arch, size=(Nx, Ny, 3); x, y, z, halo, topology=(Periodic, Periodic, Bounded))
 closure = ScalarDiffusivity(ν=1e-2)
 momentum_advection = Centered(order=2)
-free_surface = ExplicitFreeSurface(gravitational_acceleration=4^2)
+free_surface = ExplicitFreeSurface(gravitational_acceleration=g)
 model = HydrostaticFreeSurfaceModel(; grid, momentum_advection, free_surface, closure)
 
 ϵ(x, y, z) = 2randn() - 1
