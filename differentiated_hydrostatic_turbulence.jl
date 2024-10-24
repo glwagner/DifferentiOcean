@@ -1,17 +1,17 @@
 using Oceananigans
+using Oceananigans.Utils: with_tracers
 using Random
 using Enzyme
 
 Random.seed!(123)
 arch = CPU()
 Nx = Ny = 32
-halo = (3, 3, 3)
 x = y = (0, 2π)
 z = (0, 1)
 g = 4^2
 c = sqrt(g)
 
-grid = RectilinearGrid(arch, size=(Nx, Ny, 3); x, y, z, halo, topology=(Periodic, Periodic, Bounded))
+grid = RectilinearGrid(arch, size=(Nx, Ny, 1); x, y, z, topology=(Periodic, Periodic, Bounded))
 closure = ScalarDiffusivity(ν=1e-2)
 momentum_advection = Centered(order=2)
 free_surface = ExplicitFreeSurface(gravitational_acceleration=g)
@@ -36,12 +36,19 @@ end
 u_truth = deepcopy(model.velocities.u)
 v_truth = deepcopy(model.velocities.v)
 
+function set_viscosity!(model, viscosity)
+    new_closure = ScalarDiffusivity(ν=viscosity)
+    names = ()
+    new_closure = with_tracers(names, new_closure)
+    model.closure = new_closure
+    return nothing
+end
+
 function viscous_hydrostatic_turbulence(ν, model, u_init, v_init, Δt, u_truth, v_truth)
     # Initialize the model
     model.clock.iteration = 0
     model.clock.time = 0
-    new_closure = ScalarDiffusivity(; ν, κ=NamedTuple())
-    model.closure = new_closure
+    set_viscosity!(model, ν)
     set!(model, u=u_init, v=v_init)
 
     # Step it forward
@@ -54,8 +61,8 @@ function viscous_hydrostatic_turbulence(ν, model, u_init, v_init, Δt, u_truth,
     Nx, Ny, Nz = size(model.grid)
     err = 0.0
     for j = 1:Ny, i = 1:Nx 
-        err += @inbounds (u[i, j, 3] - u_truth[i, j, 3])^2 + 
-                         (v[i, j, 3] - v_truth[i, j, 3])^2
+        err += @inbounds (u[i, j, 1] - u_truth[i, j, 1])^2 + 
+                         (v[i, j, 1] - v_truth[i, j, 1])^2
     end
 
     return err::Float64
