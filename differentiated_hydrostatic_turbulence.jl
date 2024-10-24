@@ -2,7 +2,7 @@ using Oceananigans
 using Enzyme
 
 arch = CPU()
-Nx = Ny = 64
+Nx = Ny = 32
 halo = (3, 3, 3)
 x = y = (0, 2π)
 z = (0, 1)
