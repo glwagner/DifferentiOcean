@@ -20,15 +20,11 @@ model = HydrostaticFreeSurfaceModel(; grid, momentum_advection, free_surface, cl
 ϵ(x, y, z) = 2randn() - 1
 set!(model, u=ϵ, v=ϵ)
 
-Δx = minimum_xspacing(grid)
-Δt = 0.01 * Δx / c
-for n = 1:100
-    time_step!(model, Δt)
-end
-
 u_init = deepcopy(model.velocities.u)
 v_init = deepcopy(model.velocities.v)
 
+Δx = minimum_xspacing(grid)
+Δt = 0.01 * Δx / c
 for n = 1:10
     time_step!(model, Δt)
 end
@@ -48,8 +44,11 @@ function viscous_hydrostatic_turbulence(ν, model, u_init, v_init, Δt, u_truth,
     # Initialize the model
     model.clock.iteration = 0
     model.clock.time = 0
+    model.clock.last_Δt = Inf
     set_viscosity!(model, ν)
+    #set!(model, u=u_init, v=v_init, η=0)
     set!(model, u=u_init, v=v_init)
+    fill!(parent(model.free_surface.η), 0)
 
     # Step it forward
     for n = 1:10
@@ -69,11 +68,12 @@ function viscous_hydrostatic_turbulence(ν, model, u_init, v_init, Δt, u_truth,
 end
 
 # Use a manual finite difference to compute a gradient
-Δν = 1e-6
-ν1 = 2e-2
+Δν = 1e-7
+ν1 = 1.1e-2
 ν2 = ν1 + Δν
 e1 = viscous_hydrostatic_turbulence(ν1, model, u_init, v_init, Δt, u_truth, v_truth)
 e2 = viscous_hydrostatic_turbulence(ν2, model, u_init, v_init, Δt, u_truth, v_truth)
+Δe = e2 - e1
 ΔeΔν = (e2 - e1) / Δν
 
 @info "Finite difference computed: $ΔeΔν"
@@ -95,4 +95,3 @@ dedν = autodiff(set_runtime_activity(Enzyme.Reverse),
 
 @info "Automatically computed: $dedν."
 @info "Elapsed time: " * prettytime(1e-9 * (time_ns() - start_time))
-
