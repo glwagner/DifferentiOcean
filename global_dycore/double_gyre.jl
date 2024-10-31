@@ -20,7 +20,13 @@ function time_step_double_gyre(model, surface_tracer_flux; Δt=10minutes)
     model.clock.iteration = 0
     model.clock.time = 0
     model.clock.last_Δt = Inf
-    set!(model, c=0)
+
+    # This doesn't work and I'm not quite sure why:
+    #
+    # set!(model, c=0)
+    # 
+    # So we use fill! on parent(c) directly instead:
+    fill!(parent(model.tracers.c), 0)
 
     # Step it forward
     for n = 1:10
